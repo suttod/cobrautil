@@ -26,6 +26,16 @@ func IsBuiltinCommand(cmd *cobra.Command) bool {
 //
 // Thanks to Carolyn Van Slyck: https://github.com/carolynvs/stingoftheviper
 func SyncViperPreRunE(prefix string) CobraRunFunc {
+	return SyncViperPreRunEWithFile(prefix, "")
+}
+
+// SyncViperPreRunEWithFiles returns a Cobra run func that synchronizes
+// Viper environment flags prefixed with the provided argument.
+//
+// If envfile is not an empty string, it should contain a path of a dotenv file.
+// Viper will load environment variables from file with lower precedence,
+// than env of the process.
+func SyncViperPreRunEWithFile(prefix string, envfile string) CobraRunFunc {
 	prefix = strings.ReplaceAll(strings.ToUpper(prefix), "-", "_")
 	return func(cmd *cobra.Command, args []string) error {
 		if IsBuiltinCommand(cmd) {
@@ -35,6 +45,10 @@ func SyncViperPreRunE(prefix string) CobraRunFunc {
 		v := viper.New()
 		v.AllowEmptyEnv(true)
 		viper.SetEnvPrefix(prefix)
+		if envfile != "" {
+			viper.SetConfigFile(envfile)
+			viper.SetConfigType("env")
+		}
 
 		cmd.Flags().VisitAll(func(f *pflag.Flag) {
 			suffix := strings.ToUpper(strings.ReplaceAll(f.Name, "-", "_"))
